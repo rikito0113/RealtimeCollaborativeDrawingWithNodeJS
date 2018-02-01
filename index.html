@@ -1,0 +1,333 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<title>chatC</title>
+<style>
+    @charset "utf-8";
+     
+    body{
+        margin:0;
+        padding:0;
+        background-color: #fff;
+        font-family:Helvetica, HiraKakuProN-W3, sans-serif; 
+        font-size:12px;
+        color:#000;
+    }
+    
+    #contents{
+        position: absolute;
+        top: 50px;
+        left: 50px;
+        width: 800px;
+        height:800px;
+        border: 1px solid #000;
+        overflow:hidden;
+        z-index:2;
+    }
+     
+    #canvas{
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 800px;
+        height:800px;
+    }
+     
+    #dis{
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        width: 200px;
+        height:50px;
+    }
+    
+</style>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    //device browser check
+    var g_mobiledevice = false;
+    var g_browsername = 'unknown';
+    var g_browserver = -1;
+     
+    if(checkUserAgent() == false){
+        window.alert('Your browser does not apply');
+    }
+     
+    function checkUserAgent(){
+        var ua = navigator.userAgent;
+      
+        var mstr = ua.match(/iPhone OS \d+/);
+        if(mstr != null){
+        var vstr = mstr[0].match(/\d+/);
+        if(parseInt(vstr[0]) >= 3) {
+            g_mobiledevice = true;
+            g_browsername = 'iPhone';
+            return true;
+        }
+        }
+
+        if(ua.indexOf('iPad') > -1){
+        mstr = ua.match(/CPU OS \d+/);
+        if(mstr != null){
+            var vstr = mstr[0].match(/\d+/);
+            if(parseInt(vstr[0]) >= 3) {
+                g_mobiledevice = true;
+                g_browsername = 'iPad';
+                return true;
+            }
+        }
+        }
+
+        var mstr = ua.match(/Android \d+\.\d+/);
+        if(mstr != null){
+        g_browsername = 'Android';
+        var vstr = mstr[0].match(/\d+\.\d+/);
+        g_browserver = parseFloat(vstr[0]);
+        g_mobiledevice = true;
+        if(pg_browserver > 2.1) {
+            return true;
+        }
+        }
+
+        mstr = ua.match(/Chrome\/\d+/);
+        if(mstr != null){
+        g_browsername = 'Chrome';
+        var vstr = mstr[0].match(/\d+/);
+        g_browserver = parseInt(vstr[0]);
+        if(g_browserver >= 9) {
+            return true;
+        }
+        }
+
+        if(ua.indexOf('Safari') > -1){
+        mstr = ua.match(/Version\/\d+/);
+        if(mstr != null){
+            var vstr = mstr[0].match(/\d+/);
+            if(parseInt(vstr[0]) >= 5) {
+                g_browsername = 'Safari';
+                return true;
+            }
+        }
+        }
+
+        mstr = ua.match(/MSIE \d+/);
+        if(mstr != null){
+        var vstr = mstr[0].match(/\d+/);
+        if(parseInt(vstr[0]) >= 9) {
+            g_browsername = 'MSIE';
+            return true;
+        }
+        }
+
+        mstr = ua.match(/Firefox\/\d+/);
+        if(mstr != null){
+        var vstr = mstr[0].match(/\d+/);
+        if(parseInt(vstr[0]) >= 4) {
+            g_browsername = 'Firefox';
+            return true;
+        }
+        }
+
+        if(ua.indexOf('Opera') > -1){
+        mstr = ua.match(/Version\/\d+/);
+        if(mstr != null){
+            var vstr = mstr[0].match(/\d+/);
+            if(parseInt(vstr[0]) >= 11) {
+                g_browsername = 'Opera';
+                return true;
+            }
+        }
+        }
+
+        return false;
+    }
+</script>
+
+<script>
+    //socket
+    var socket = io();
+    
+    socket.on('draw', function(data) {
+        
+        document.getElementById("x").value = data[1];
+        document.getElementById("y").value = data[2];
+        
+        var command = data[0];
+        
+        if(command == 'down'){
+            ctx.strokeStyle="#0000ff";
+                ctx.lineWidth=3;
+                ctx.beginPath();
+                ctx.moveTo(data[1], data[2]);
+            
+        }else if(command == 'move'){
+            ctx.lineTo(data[1], data[2]);
+            ctx.stroke();
+            
+        }else if(command == 'clear'){
+            document.getElementById("x").value = "";
+            document.getElementById("y").value = "";
+            ctx.clearRect(0,0,data[1],data[2]);
+            
+        }
+      
+    });
+    
+</script>
+
+<script>
+    //canvas
+    window.addEventListener("load", init, false);
+    
+    var mouseX = 0;
+    var mouseY = 0;
+    var offsetX = 0;
+    var offsetY = 0;
+    var ctx = null;
+    var w = 5;
+    var h = 5;
+    var buttonStart = null;
+    var buttonMove = null;
+    var buttonEnd = null;
+    var theCanvas = null;
+     
+    function init(){
+        var theContents = document.getElementById("contents");
+        offsetX = (theContents.currentStyle || document.defaultView.getComputedStyle(theContents,'')).width;
+        offsetX = Number(offsetX.replace('px',''));
+        offsetX =  offsetX / 2;
+        offsetY = (theContents.currentStyle || document.defaultView.getComputedStyle(theContents,'')).height;
+        offsetY = Number(offsetY.replace('px',''));
+        offsetY =  offsetY / 2;
+         
+        document.getElementById('canvas').addEventListener('touchstart', function() {
+            event.preventDefault();
+        });
+        document.getElementById('canvas').addEventListener('touchmove', function() {
+            event.preventDefault();
+        });
+        document.getElementById('canvas').addEventListener('touchend', function() {
+            event.preventDefault();
+        });
+        
+        if(g_mobiledevice==true){
+            buttonStart = 'touchstart';
+            buttonMove = 'touchmove';
+            buttonEnd = 'touchend';
+        }else{
+            buttonStart = 'mousedown';
+            buttonMove = 'mousemove';
+            buttonEnd = 'mouseup';
+        }
+         
+        theCanvas = document.getElementById("canvas");
+        ctx = theCanvas.getContext("2d");
+        theCanvas.addEventListener(buttonStart, mouseDownHandler, false);
+        theCanvas.addEventListener(buttonEnd, mouseUpHandler, false);
+         
+        ctx.strokeStyle="#000000";
+        ctx.fillStyle = "#000000";
+        ctx.lineWidth=1;
+    }
+
+     // every time the user drags their mouse
+     // this function will be executed
+    function setMouseXY(e){
+        if(g_mobiledevice){
+            var rect = event.currentTarget.getBoundingClientRect();
+            mouseX = event.touches[0].pageX - rect.left;
+            mouseY = event.touches[0].pageY - rect.top;
+        }else if(g_browsername == 'MSIE' || g_browsername == 'Opera'){
+            rect = document.getElementById("canvas").getBoundingClientRect();
+            mouseX = event.clientX - rect.left;
+            mouseY = event.clientY - rect.top;
+        }else if(g_browsername == 'Firefox'){
+            rect = document.getElementById("canvas").getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        }else{
+            rect = event.currentTarget.getBoundingClientRect();
+            mouseX =  event.clientX - rect.left;
+            mouseY =  event.clientY - rect.top;
+        }
+    }
+     
+    function mouseDownHandler(e){
+        setMouseXY(e);
+        //dont need this part
+        /*
+        ctx.strokeStyle="#000000";
+        ctx.lineWidth=1;
+        ctx.beginPath();
+        ctx.moveTo(mouseX, mouseY);
+        */
+        theCanvas.addEventListener(buttonMove, mouseMoveHandler, false);
+        
+        document.getElementById("x").value = mouseX;
+        document.getElementById("y").value = mouseY;
+        var chat_message = [];
+        
+        chat_message[0] = "down";
+        chat_message[1] = mouseX;
+        chat_message[2] = mouseY;
+        socket.emit('draw', chat_message);
+        
+    }
+     
+    function mouseUpHandler(){
+        theCanvas.removeEventListener(buttonMove, mouseMoveHandler, false);
+    }
+     
+    function mouseMoveHandler(e){
+        setMouseXY(e);
+        //dont need this part
+        /*
+        ctx.lineTo(mouseX, mouseY);
+        ctx.stroke();
+        */
+        document.getElementById("x").value = mouseX;
+        document.getElementById("y").value = mouseY;
+        var chat_message = [];
+        chat_message[0] = "move";
+        chat_message[1] = mouseX;
+        chat_message[2] = mouseY;
+        socket.emit('draw', chat_message);
+        
+        
+    }
+    
+    function rect_clear(){
+        ctx.clearRect(0,0,800,800);
+        var chat_message = [];
+        
+        chat_message[0] = "clear";
+    chat_message[1] = 800;
+    chat_message[2] = 800;
+    socket.emit('draw', chat_message);
+    }
+    
+</script>
+
+</head>
+<body>
+
+
+<div id="contents">
+    <canvas id="canvas" width="800" height="800">
+    </canvas>
+</div>
+
+
+
+
+<div style="top:10px;left:50px;width:700px;height:100px;border:0px solid blue;position:absolute">
+<div>
+X:<input type="text" id="x" style="width:30px" value="">
+Y:<input type="text" id="y" style="width:30px" value="">
+&nbsp;&nbsp;&nbsp;
+<input type="button" value="Clear" onClick="rect_clear()">
+
+</body>
+</html>
