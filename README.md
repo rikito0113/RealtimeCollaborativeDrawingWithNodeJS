@@ -1,7 +1,7 @@
 # RealtimeCollaborativeDrawingWithNodeJS
 
 
-![capture](https://user-images.githubusercontent.com/28382771/35705718-1daf284e-0758-11e8-946f-02e78c6a8114.PNG)
+![test gif](https://user-images.githubusercontent.com/28382771/35706297-12d2ef3a-075a-11e8-97c8-f580fdbf1c09.gif)
 
 
 <Before start writing code>
